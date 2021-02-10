@@ -36,6 +36,9 @@ class Ui_MainWindow(object):
         self.cam_view = QtWidgets.QLabel(self.tab_3)
         self.cam_view.setObjectName("cam_view")
         self.horizontalLayout_2.addWidget(self.cam_view)
+        self.pushButton = QtWidgets.QPushButton(self.tab_3)
+        self.pushButton.setObjectName("pushButton")
+        self.horizontalLayout_2.addWidget(self.pushButton)
         self.tabWidget.addTab(self.tab_3, "")
         self.tab_4 = QtWidgets.QWidget()
         self.tab_4.setObjectName("tab_4")
@@ -54,5 +57,6 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "BloonLight"))
         self.cam_view.setText(_translate("MainWindow", "TextLabel"))
+        self.pushButton.setText(_translate("MainWindow", "PushButton"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Панель управления"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Настройки"))
