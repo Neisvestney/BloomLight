@@ -15,11 +15,13 @@ class Worker(QThread):
     progress = pyqtSignal(int)
     data = pyqtSignal(object)
 
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, fn, startup, terminatefn, *args, **kwargs):
         super(Worker, self).__init__()
 
         # Store constructor arguments (re-used for processing)
         self.fn = fn
+        self.startup = startup
+        self.terminatefn = terminatefn
         self.args = args
         self.kwargs = kwargs
 
@@ -33,6 +35,7 @@ class Worker(QThread):
         logging.info(f"Started thread {self.fn} with {self.args} and {self.kwargs}")
         # Retrieve args/kwargs here; and fire processing using them
         try:
+            self.startup(*self.args, **self.kwargs)
             while True:
                 self.fn(*self.args, **self.kwargs)
         except:
@@ -43,5 +46,6 @@ class Worker(QThread):
             self.finished.emit()  # Done
 
     def terminate(self):
+        self.terminatefn(*self.args, **self.kwargs)
         logging.info(f"Thread {self.fn} terminated")
         super(Worker, self).terminate()
