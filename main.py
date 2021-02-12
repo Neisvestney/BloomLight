@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+from copy import deepcopy
 
 import cv2
 import imutils as imutils
@@ -159,20 +160,17 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         for item in self.position_data:
             light.append(item > 0)
 
-        new_previous_light = self.previous_light.copy()
+        new_previous_light = deepcopy(self.previous_light)
 
-        # for i, (t, l) in enumerate(self.previous_light):
-        #     if light[i] != l:
-        #         if (not light[i] and self.previous_light[i][1] and time.time() - self.previous_light[i][0] > 1000) or light[i] and not self.previous_light[i][1]:
-        #             new_previous_light[i][0] = time.time()
-        #             new_previous_light[i][1] = light[i]
-        #             print('a')
-        #         else:
-        #             print('b')
-        #             light[i] = True
+        for i, (t, l) in enumerate(self.previous_light):
+            if light[i] != l:
+                if (not light[i] and self.previous_light[i][1] and time.time() - self.previous_light[i][0] > 10) or light[i] and not self.previous_light[i][1]:
+                    new_previous_light[i][0] = time.time()
+                    new_previous_light[i][1] = light[i]
+                else:
+                    light[i] = True
 
         data_callback.emit(light)
-        print(light, self.previous_light)
 
         self.previous_light = new_previous_light
 
