@@ -14,7 +14,6 @@ class Worker(QThread):
 
     progress = pyqtSignal(int)
     data = pyqtSignal(object)
-    data2 = pyqtSignal(object)
 
     def __init__(self, fn, startup, terminatefn, *args, **kwargs):
         super(Worker, self).__init__()
@@ -28,7 +27,6 @@ class Worker(QThread):
 
         # Add the callback to our kwargs
         self.kwargs['data_callback'] = self.data
-        self.kwargs['data2_callback'] = self.data2
 
     def run(self):
         """

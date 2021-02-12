@@ -39,18 +39,25 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.cameras_list.addItem("0")
         self.cameras_list.addItem("1")
-        self.cameras_list.setCurrentRow(0)
+        self.cameras_list.setCurrentRow(1)
         self.cameras_list.itemClicked.connect(self.restart_cam)
 
         self.cap: cv2.VideoCapture = None
         self.writer: cv2.VideoWriter = None
         self.base_frame = None
+        self.position_data = [0, 0]
+        self.previous_light = [[time.time(), False], [time.time(), False]]
 
         self.cam_worker = Worker(self.cam_process, self.cam_startup, self.cam_terminate)
         self.cam_worker.data.connect(lambda d: self.bridness.setValue(int(d)))
         # self.pushButton.pressed.connect(lambda: self.view_cam_worker.terminate())
         self.cam_worker.start()
 
+        self.light_worker = Worker(self.light_process, lambda *args, **kwargs: 0, lambda *args, **kwargs: 0)
+        self.light_worker.data.connect(self.set_light_ui)
+        self.light_worker.start()
+
+    # region cam_worker
     def restart_cam(self):
         self.cam_view.setChecked(False)
         time.sleep(1)
@@ -67,20 +74,24 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
             os.makedirs(self.vidio_path.text())
 
         _, frame = self.cap.read()
-        frame = imutils.resize(frame, width=500)
+        # frame = imutils.resize(frame, width=640)
 
         s = (frame.shape[1], frame.shape[0])
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        self.writer = cv2.VideoWriter(os.path.join(self.vidio_path.text(), datetime.datetime.now().strftime("%H.%M.%S") + ".avi"), fourcc, 30, s)
+        self.writer = cv2.VideoWriter(
+            os.path.join(self.vidio_path.text(), datetime.datetime.now().strftime("%H.%M.%S") + ".avi"), fourcc, 30, s)
 
     def cam_terminate(self, *args, **kwargs):
-        self.writer.release()
+        if self.is_video_recording.isChecked():
+            self.writer.release()
+
         self.cap.release()
 
-    def cam_process(self, data_callback, data2_callback, *args, **kwargs):
+    def cam_process(self, data_callback, *args, **kwargs):
         _, frame = self.cap.read()
 
-        frame = imutils.resize(frame, width=500)
+        # frame = imutils.resize(frame, width=640)
+
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
@@ -99,35 +110,35 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         cnts = imutils.grab_contours(cnts)
 
         line_y = int(len(frame) / 2 + self.center_offset.value())
-        position_data = [0, 0]
+        self.position_data = [0, 0]
 
         for c in cnts:
-            if self.min_area.text() != "0" and self.min_area.text() != "" and cv2.contourArea(c) < int(self.min_area.text()):
+            if self.min_area.text() != "0" and self.min_area.text() != "" and cv2.contourArea(c) < int(
+                    self.min_area.text()):
                 continue
-            if self.reset_area.text() != "0" and self.reset_area.text() != "" and cv2.contourArea(c) > int(self.reset_area.text()):
+            if self.reset_area.text() != "0" and self.reset_area.text() != "" and cv2.contourArea(c) > int(
+                    self.reset_area.text()):
                 logging.info('Base frame reset')
                 self.base_frame = gray
                 return
             (x, y, w, h) = cv2.boundingRect(c)
-            center_y = int(y + h/2)
-            center = (int(x + w/2), center_y)
+            center_y = int(y + h / 2)
+            center = (int(x + w / 2), center_y)
 
             if center_y < line_y:
-                position_data[0] += 1
+                self.position_data[0] += 1
             else:
-                position_data[1] += 1
+                self.position_data[1] += 1
 
             if self.ar_cam.isChecked():
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 cv2.circle(frame, center, 5, (0, 0, 255), 4)
 
-        data2_callback.emit(position_data)
-        print(position_data)
-
         if self.ar_cam.isChecked():
-            cv2.line(frame, (0, line_y), (500, line_y), (255, 0, 0), 2)
+            cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 0, 0), 2)
 
-        self.writer.write(frame)
+        if self.is_video_recording.isChecked():
+            self.writer.write(frame)
 
         if self.cam_view.isChecked():
             cv2.imshow("Camera", frame)
@@ -137,6 +148,39 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
             cv2.waitKey(1) & 0xFF
         else:
             cv2.destroyAllWindows()
+
+    # endregion
+
+    # region light_worker
+    def light_process(self, data_callback):
+        time.sleep(1)
+        light = list()
+
+        for item in self.position_data:
+            light.append(item > 0)
+
+        new_previous_light = self.previous_light.copy()
+
+        # for i, (t, l) in enumerate(self.previous_light):
+        #     if light[i] != l:
+        #         if (not light[i] and self.previous_light[i][1] and time.time() - self.previous_light[i][0] > 1000) or light[i] and not self.previous_light[i][1]:
+        #             new_previous_light[i][0] = time.time()
+        #             new_previous_light[i][1] = light[i]
+        #             print('a')
+        #         else:
+        #             print('b')
+        #             light[i] = True
+
+        data_callback.emit(light)
+        print(light, self.previous_light)
+
+        self.previous_light = new_previous_light
+
+    def set_light_ui(self, light):
+        self.light1.setChecked(light[0])
+        self.light2.setChecked(light[1])
+
+    # endregion
 
     def closeEvent(self, event):
         self.cam_worker.terminate()
