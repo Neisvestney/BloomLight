@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import socket
 import sys
 import time
 from copy import deepcopy
@@ -171,6 +172,10 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     light[i] = True
 
         data_callback.emit(light)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        ip, port = self.contr_ip.text().split(":")
+        sock.sendto(bytes(light), (ip, int(port)))
+        # print(sock.recv(256))
 
         self.previous_light = new_previous_light
 
