@@ -143,7 +143,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.writer.write(frame)
 
         if self.cam_view.isChecked():
-            cv2.imshow("Camera", frame)
+            cv2.imshow("Camera", imutils.resize(frame, width=1000))
             cv2.imshow("Thresh", thresh)
             cv2.imshow("Gray", gray)
             cv2.imshow("Frame Delta", frame_delta)
