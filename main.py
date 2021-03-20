@@ -39,9 +39,20 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.select_video_path.pressed.connect(self.select_video_path_pressed)
 
-        self.cameras_list.addItem("0")
-        self.cameras_list.addItem("1")
-        self.cameras_list.setCurrentRow(1)
+        index = 0
+        while True:
+            logging.debug(f'Checking camera №{index}')
+            cap = cv2.VideoCapture(index)
+            if not cap.read()[0]:
+                break
+            cap.release()
+            self.cameras_list.addItem(str(index))
+            index += 1
+
+        # self.cameras_list.addItem("0")
+
+        self.cameras_list.setCurrentRow(0)
+
         self.cameras_list.itemClicked.connect(self.restart_cam)
 
         self.cap: cv2.VideoCapture = None
@@ -51,13 +62,17 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.previous_light = [[time.time(), False], [time.time(), False]]
 
         self.cam_worker = Worker(self.cam_process, self.cam_startup, self.cam_terminate)
-        self.cam_worker.data.connect(lambda d: self.bridness.setValue(int(d)))
+        self.cam_worker.data.connect(self.cam_worker_on_data)
         # self.pushButton.pressed.connect(lambda: self.view_cam_worker.terminate())
         self.cam_worker.start()
 
         self.light_worker = Worker(self.light_process, lambda *args, **kwargs: 0, lambda *args, **kwargs: 0)
         self.light_worker.data.connect(self.set_light_ui)
         self.light_worker.start()
+
+    def cam_worker_on_data(self, d):
+        self.bridness.setValue(int(d[0]))
+        self.camera_view_main.setPixmap(d[1])
 
     # region cam_worker
     def restart_cam(self):
@@ -96,8 +111,6 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
-        data_callback.emit(np.mean(np.mean(gray, axis=0), axis=0))
 
         if self.base_frame is None:
             self.base_frame = gray
@@ -151,6 +164,9 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         else:
             cv2.destroyAllWindows()
 
+        data_callback.emit([np.mean(np.mean(gray, axis=0), axis=0),
+                            QPixmap.fromImage(QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_BGR888))])
+
     # endregion
 
     # region light_worker
@@ -174,6 +190,10 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         data_callback.emit(light)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         ip, port = self.contr_ip.text().split(":")
+        sock.sendto(bytes(light), (ip, int(port)))
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        ip, port = self.contr_ip_2.text().split(":")
         sock.sendto(bytes(light), (ip, int(port)))
         # print(sock.recv(256))
 

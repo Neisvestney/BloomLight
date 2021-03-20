@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>268</width>
-    <height>408</height>
+    <height>441</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -150,6 +150,13 @@
          </layout>
         </item>
         <item>
+         <widget class="QLabel" name="camera_view_main">
+          <property name="text">
+           <string>Инициализация камеры...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -179,27 +186,7 @@
           </property>
          </widget>
         </item>
-        <item row="7" column="1">
-         <widget class="QListWidget" name="cameras_list"/>
-        </item>
-        <item row="1" column="0">
-         <widget class="QPushButton" name="select_video_path">
-          <property name="text">
-           <string>Выбрать</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="vidio_path">
-          <property name="text">
-           <string>out/</string>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="16" column="0">
+        <item row="17" column="0">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -241,27 +228,23 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="Line" name="line">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="label_5">
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="vidio_path">
           <property name="text">
-           <string>Максимальный размер объекта</string>
+           <string>out/</string>
           </property>
-         </widget>
-        </item>
-        <item row="5" column="0" colspan="2">
-         <widget class="QCheckBox" name="ar_cam">
-          <property name="text">
-           <string>Доп. графика на камере</string>
-          </property>
-          <property name="checked">
+          <property name="readOnly">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QListWidget" name="cameras_list"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="select_video_path">
+          <property name="text">
+           <string>Выбрать</string>
           </property>
          </widget>
         </item>
@@ -282,6 +265,30 @@
           </property>
          </widget>
         </item>
+        <item row="4" column="0" colspan="2">
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0" colspan="2">
+         <widget class="QCheckBox" name="ar_cam">
+          <property name="text">
+           <string>Доп. графика на камере</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Максимальный размер объекта</string>
+          </property>
+         </widget>
+        </item>
         <item row="12" column="1">
          <widget class="QSlider" name="center_offset">
           <property name="minimum">
@@ -298,10 +305,31 @@
           </property>
          </widget>
         </item>
+        <item row="12" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Смещение центра</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0" colspan="2">
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
         <item row="11" column="0" colspan="2">
          <widget class="Line" name="line_3">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="13" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Время отключения света</string>
           </property>
          </widget>
         </item>
@@ -318,31 +346,10 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0" colspan="2">
-         <widget class="Line" name="line_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="12" column="0">
-         <widget class="QLabel" name="label_6">
+        <item row="15" column="1">
+         <widget class="QLineEdit" name="contr_ip">
           <property name="text">
-           <string>Смещение центра</string>
-          </property>
-         </widget>
-        </item>
-        <item row="13" column="0">
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>Время отключения света</string>
-          </property>
-         </widget>
-        </item>
-        <item row="13" column="1">
-         <widget class="QSpinBox" name="time_to_off">
-          <property name="value">
-           <number>5</number>
+           <string>192.168.137.32:4210</string>
           </property>
          </widget>
         </item>
@@ -356,14 +363,28 @@
         <item row="15" column="0">
          <widget class="QLabel" name="label_8">
           <property name="text">
-           <string>IP контролера</string>
+           <string>IP контролера №1</string>
           </property>
          </widget>
         </item>
-        <item row="15" column="1">
-         <widget class="QLineEdit" name="contr_ip">
+        <item row="13" column="1">
+         <widget class="QSpinBox" name="time_to_off">
+          <property name="value">
+           <number>5</number>
+          </property>
+         </widget>
+        </item>
+        <item row="16" column="0">
+         <widget class="QLabel" name="label_9">
           <property name="text">
-           <string>192.168.137.32:4210</string>
+           <string>IP контролера №2</string>
+          </property>
+         </widget>
+        </item>
+        <item row="16" column="1">
+         <widget class="QLineEdit" name="contr_ip_2">
+          <property name="text">
+           <string>localhost:4210</string>
           </property>
          </widget>
         </item>
