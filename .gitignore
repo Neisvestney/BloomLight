@@ -420,4 +420,4 @@ dmypy.json
 cython_debug/
 
 out/
-
+config.save

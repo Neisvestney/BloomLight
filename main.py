@@ -16,6 +16,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QLabel, QListWidgetItem, QFileDialog
 
 import design
+from config import Field, ConfigManager
 from theard import Worker
 
 sys._excepthook = sys.excepthook
@@ -38,6 +39,10 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
+        self.is_video_recording_a = Field(self.is_video_recording.isChecked, self.is_video_recording.setChecked, bool)
+        self.config = ConfigManager(self)
+        self.save.pressed.connect(self.config.save)
 
         self.select_video_path.pressed.connect(self.select_video_path_pressed)
 
@@ -271,6 +276,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def closeEvent(self, event):
         self.cam_worker.terminate()
         logging.info("Good bye!")
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
