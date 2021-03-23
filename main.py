@@ -72,9 +72,15 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.light_worker.data.connect(self.set_light_ui)
         self.light_worker.start()
 
+        self.reset_base_frame.pressed.connect(self.reset_base_frame_fn)
+
+    def reset_base_frame_fn(self):
+        self.base_frame = None
+
     def cam_worker_on_data(self, d):
         self.bridness.setValue(int(d[0]))
         self.camera_view_main.setPixmap(d[1])
+        self.people_count.setValue(d[2])
 
     # region cam_worker
     def restart_cam(self):
@@ -205,7 +211,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.previous_cnts = cnts
 
         if self.ar_cam.isChecked():
-            cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 0, 0), 2)
+            cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 255, 255), 2)
 
         if self.is_video_recording.isChecked():
             self.writer.write(frame)
@@ -220,7 +226,8 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
             cv2.destroyAllWindows()
 
         data_callback.emit([np.mean(np.mean(gray, axis=0), axis=0),
-                            QPixmap.fromImage(QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_BGR888))])
+                            QPixmap.fromImage(QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_BGR888)),
+                            len(cnts)])
 
     # endregion
 

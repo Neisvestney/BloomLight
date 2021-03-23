@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>268</width>
-    <height>441</height>
+    <height>618</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -77,7 +77,7 @@
              <number>1</number>
             </property>
             <property name="text">
-             <string>Людей в помещении</string>
+             <string>Объектов в помещении</string>
             </property>
             <property name="textFormat">
              <enum>Qt::AutoText</enum>
@@ -176,6 +176,16 @@
           </property>
          </spacer>
         </item>
+        <item>
+         <widget class="QPushButton" name="reset_base_frame">
+          <property name="toolTip">
+           <string>Необходимо сбрасывать только в отсуствии людей</string>
+          </property>
+          <property name="text">
+           <string>Сбросить базовый кадр</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_4">
@@ -183,65 +193,24 @@
         <string>Настройки</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0" colspan="2">
-         <widget class="QCheckBox" name="is_video_recording">
-          <property name="text">
-           <string>Запись видео</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="17" column="0">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="text">
-           <string>Камера</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="1">
-         <widget class="QSpinBox" name="min_area">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>99999999</number>
-          </property>
-          <property name="singleStep">
-           <number>100</number>
-          </property>
+        <item row="13" column="1">
+         <widget class="QSpinBox" name="time_to_off">
           <property name="value">
-           <number>500</number>
+           <number>5</number>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="vidio_path">
+        <item row="16" column="0">
+         <widget class="QLabel" name="label_9">
           <property name="text">
-           <string>out/</string>
+           <string>IP контролера №2</string>
           </property>
-          <property name="readOnly">
-           <bool>true</bool>
+         </widget>
+        </item>
+        <item row="16" column="1">
+         <widget class="QLineEdit" name="contr_ip_2">
+          <property name="text">
+           <string>localhost:4210</string>
           </property>
          </widget>
         </item>
@@ -255,6 +224,13 @@
           </property>
          </widget>
         </item>
+        <item row="9" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Минимальный размер объекта</string>
+          </property>
+         </widget>
+        </item>
         <item row="6" column="0" colspan="2">
          <widget class="QCheckBox" name="cam_view">
           <property name="text">
@@ -265,10 +241,26 @@
           </property>
          </widget>
         </item>
-        <item row="9" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Минимальный размер объекта</string>
+        <item row="12" column="1">
+         <widget class="QSlider" name="center_offset">
+          <property name="minimum">
+           <number>-100</number>
+          </property>
+          <property name="maximum">
+           <number>100</number>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0" colspan="2">
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
@@ -289,29 +281,6 @@
           </property>
          </widget>
         </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Максимальный размер объекта</string>
-          </property>
-         </widget>
-        </item>
-        <item row="12" column="1">
-         <widget class="QSlider" name="center_offset">
-          <property name="minimum">
-           <number>-100</number>
-          </property>
-          <property name="maximum">
-           <number>100</number>
-          </property>
-          <property name="value">
-           <number>0</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
         <item row="12" column="0">
          <widget class="QLabel" name="label_6">
           <property name="text">
@@ -319,17 +288,10 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0" colspan="2">
-         <widget class="Line" name="line_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="0" colspan="2">
-         <widget class="Line" name="line_3">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+        <item row="10" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Максимальный размер объекта</string>
           </property>
          </widget>
         </item>
@@ -337,6 +299,13 @@
          <widget class="QLabel" name="label_7">
           <property name="text">
            <string>Время отключения света</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="0" colspan="2">
+         <widget class="Line" name="line_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
@@ -374,26 +343,74 @@
           </property>
          </widget>
         </item>
-        <item row="13" column="1">
-         <widget class="QSpinBox" name="time_to_off">
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="vidio_path">
+          <property name="text">
+           <string>out/</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Камера</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QCheckBox" name="is_video_recording">
+          <property name="text">
+           <string>Запись видео</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <widget class="QSpinBox" name="min_area">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>99999999</number>
+          </property>
+          <property name="singleStep">
+           <number>100</number>
+          </property>
           <property name="value">
-           <number>5</number>
+           <number>500</number>
           </property>
          </widget>
         </item>
-        <item row="16" column="0">
-         <widget class="QLabel" name="label_9">
+        <item row="18" column="0" colspan="2">
+         <widget class="QPushButton" name="save">
           <property name="text">
-           <string>IP контролера №2</string>
+           <string>Сохранить</string>
           </property>
          </widget>
         </item>
-        <item row="16" column="1">
-         <widget class="QLineEdit" name="contr_ip_2">
-          <property name="text">
-           <string>localhost:4210</string>
+        <item row="17" column="0" colspan="2">
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
-         </widget>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
