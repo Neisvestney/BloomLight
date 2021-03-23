@@ -6,6 +6,7 @@ import sys
 import time
 from copy import deepcopy
 
+import coloredlogs
 import cv2
 import imutils as imutils
 import numpy as np
@@ -28,7 +29,8 @@ def my_exception_hook(exctype, value, traceback):
 
 sys.excepthook = my_exception_hook
 
-logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+coloredlogs.install(level='DEBUG')
 logging.info("Starting BloomLight Server by SenterisTeam")
 
 
@@ -137,6 +139,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
         if self.base_frame is None:
+            logging.warning('Base frame reset')
             self.base_frame = gray
             return
 
@@ -157,7 +160,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 continue
             if self.reset_area.text() != "0" and self.reset_area.text() != "" and cv2.contourArea(c) > int(
                     self.reset_area.text()):
-                logging.info('Base frame reset')
+                logging.warning('Base frame reset')
                 self.base_frame = gray
                 return
 
@@ -186,8 +189,6 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 if self.cntr_in_range(cv2.boundingRect(c), p[1]):
                     p[0] += 1
 
-                    if p[0] == 150:
-                        logging.warning(f'Same contour detected: {x}:{y} ({w} x {h}). Count: {p[0]}')
                     if p[0] in range(150, 299):
                         if self.ar_cam.isChecked():
                             center_y = int(y + h / 2)

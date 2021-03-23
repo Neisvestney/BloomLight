@@ -5,7 +5,7 @@ import traceback
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
 
-logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Worker(QThread):
@@ -32,7 +32,7 @@ class Worker(QThread):
         """
         Initialise the runner function with passed args, kwargs.
         """
-        logging.info(f"Started thread {self.fn} with {self.args} and {self.kwargs}")
+        logging.debug(f"Started thread {self.fn} with {self.args} and {self.kwargs}")
         # Retrieve args/kwargs here; and fire processing using them
         try:
             self.startup(*self.args, **self.kwargs)
@@ -47,5 +47,5 @@ class Worker(QThread):
 
     def terminate(self):
         self.terminatefn(*self.args, **self.kwargs)
-        logging.info(f"Thread {self.fn} terminated")
+        logging.debug(f"Thread {self.fn} terminated")
         super(Worker, self).terminate()
