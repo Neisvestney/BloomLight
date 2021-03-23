@@ -61,6 +61,8 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.position_data = [0, 0]
         self.previous_light = [[time.time(), False], [time.time(), False]]
 
+        self.previous_cnts = list()
+        self.same_cnts = list()
         self.cam_worker = Worker(self.cam_process, self.cam_startup, self.cam_terminate)
         self.cam_worker.data.connect(self.cam_worker_on_data)
         # self.pushButton.pressed.connect(lambda: self.view_cam_worker.terminate())
@@ -86,6 +88,8 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     def cam_startup(self, *args, **kwargs):
         self.base_frame = None
+        self.previous_cnts = list()
+        self.same_cnts = list()
         self.cap = cv2.VideoCapture(int(self.cameras_list.selectedItems()[0].text()))
         if not os.path.exists(self.vidio_path.text()):
             os.makedirs(self.vidio_path.text())
@@ -98,14 +102,28 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.writer = cv2.VideoWriter(
             os.path.join(self.vidio_path.text(), datetime.datetime.now().strftime("%H.%M.%S") + ".avi"), fourcc, 30, s)
 
+    def in_range(self, c1, c2):
+        # return c1 == c2
+        return c1 in range(c2 - 5, c2 + 5)
+
+    def cntr_in_range(self, c1, c2):
+        (x, y, w, h) = c1
+        (x2, y2, w2, h2) = c2
+        return self.in_range(x, x2) and self.in_range(y, y2) and self.in_range(w, w2) and self.in_range(h, h2)
+
     def cam_terminate(self, *args, **kwargs):
         if self.is_video_recording.isChecked():
             self.writer.release()
 
         self.cap.release()
+        self.base_frame = None
+        self.previous_cnts = list()
+        self.same_cnts = list()
 
     def cam_process(self, data_callback, *args, **kwargs):
         _, frame = self.cap.read()
+        if frame is None:
+            return
 
         # frame = imutils.resize(frame, width=640)
 
@@ -136,9 +154,15 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 logging.info('Base frame reset')
                 self.base_frame = gray
                 return
+
             (x, y, w, h) = cv2.boundingRect(c)
             center_y = int(y + h / 2)
             center = (int(x + w / 2), center_y)
+
+            for p in self.previous_cnts:
+                (x2, y2, w2, h2) = cv2.boundingRect(p)
+                if self.cntr_in_range((x, y, w, h), (x2, y2, w2, h2)):
+                    self.same_cnts.append([0, (x2, y2, w2, h2)])
 
             if center_y < line_y:
                 self.position_data[0] += 1
@@ -146,8 +170,39 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 self.position_data[1] += 1
 
             if self.ar_cam.isChecked():
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.circle(frame, center, 5, (0, 0, 255), 4)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (205, 39, 95), 2)
+                cv2.circle(frame, center, 3, (205, 39, 95), 5)
+
+        for p in self.same_cnts[:]:
+            detected = False
+            for c in cnts:
+                (x, y, w, h) = cv2.boundingRect(c)
+                if self.cntr_in_range(cv2.boundingRect(c), p[1]):
+                    p[0] += 1
+
+                    if p[0] == 150:
+                        logging.warning(f'Same contour detected: {x}:{y} ({w} x {h}). Count: {p[0]}')
+                    if p[0] in range(150, 299):
+                        if self.ar_cam.isChecked():
+                            center_y = int(y + h / 2)
+                            center = (int(x + w / 2), center_y)
+                            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
+                            cv2.circle(frame, center, 3, (255, 255, 255), 5)
+                    if p[0] == 300:
+                        logging.warning(f'Cutting zone with unmoved object: {x}:{y} ({w} x {h}). Count: {p[0]}')
+                        cropped = gray[y:y+h, x:x+w]
+                        self.base_frame[y:y+h, x:x+w] = cropped
+                        self.same_cnts.remove(p)
+                        if self.cam_view.isChecked():
+                            cv2.imshow("Cropped", imutils.resize(cropped,  width=300))
+
+                    detected = True
+                    continue
+
+            if not detected:
+                self.same_cnts.remove(p)
+
+        self.previous_cnts = cnts
 
         if self.ar_cam.isChecked():
             cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 0, 0), 2)
@@ -208,7 +263,6 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def closeEvent(self, event):
         self.cam_worker.terminate()
         logging.info("Good bye!")
-
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
