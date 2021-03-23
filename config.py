@@ -1,11 +1,14 @@
+from __future__ import annotations
+
+import logging
 import pickle
+from typing import TypeVar, Type, Generic
 
 
 class ConfigManager:
     def __init__(self, external: type):
         self.external = external
         self.fields = [(f, external.__getattribute__(f)) for f in dir(external) if type(external.__getattribute__(f)) == Field]
-        self.set()
         self.load()
 
     def set(self):
@@ -21,6 +24,8 @@ class ConfigManager:
         self.set()
         file = open('config.save', 'wb')
         pickle.dump(self.get_save(), file)
+        file.close()
+        logging.info("Save complete")
 
     def load(self):
         try:
@@ -29,12 +34,14 @@ class ConfigManager:
             return False
 
         save = pickle.load(file)
+        file.close()
         for v in dir(save):
             for x in self.fields:
                 if v == x[0]:
                     x[1].set_fn(save.__getattribute__(v))
 
         self.set()
+        logging.info("Load complete")
         return True
 
 
@@ -42,8 +49,11 @@ class Save:
     pass
 
 
-class Field:
-    def __init__(self, value_fn, set_fn, data_type):
+T = TypeVar('T')
+
+
+class Field(Generic[T]):
+    def __init__(self, value_fn, set_fn, data_type: Type[T]) -> T:
         self.value_fn = value_fn
         self.set_fn = set_fn
         self.data_type = data_type

@@ -35,16 +35,11 @@ coloredlogs.install(level='DEBUG')
 logging.info("Starting BloomLight Server by SenterisTeam")
 
 
+# noinspection PyTypeChecker
 class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-
-        self.is_video_recording_a = Field(self.is_video_recording.isChecked, self.is_video_recording.setChecked, bool)
-        self.config = ConfigManager(self)
-        self.save.pressed.connect(self.config.save)
-
-        self.select_video_path.pressed.connect(self.select_video_path_pressed)
 
         index = 0
         while True:
@@ -58,7 +53,33 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         # self.cameras_list.addItem("0")
 
-        self.cameras_list.setCurrentRow(0)
+        # region Config
+        self.is_video_recording: bool = Field(self.is_video_recording_field.isChecked, self.is_video_recording_field.setChecked, bool)
+        self.video_path: str = Field(self.vidio_path_field.text, self.vidio_path_field.setText, str)
+
+        self.ar_cam: bool = Field(self.ar_cam_field.isChecked, self.ar_cam_field.setChecked, bool)
+        self.cam_view: bool = Field(self.cam_view_field.isChecked, self.cam_view_field.setChecked, bool)
+        self.camera_id: int = Field(lambda: int(self.cameras_list.selectedItems()[0].text()) if self.cameras_list.selectedItems() else 0, self.cameras_list.setCurrentRow, int)
+
+        self.min_area: int = Field(self.min_area_field.value, self.min_area_field.setValue, int)
+        self.reset_area: int = Field(self.reset_area_field.value, self.reset_area_field.setValue, int)
+        self.frame_to_delete: int = Field(self.frame_to_delete_field.value, self.frame_to_delete_field.setValue, int)
+        self.static_offset: int = Field(self.static_offset_field.value, self.static_offset_field.setValue, int)
+
+        self.center_offset: int = Field(self.center_offset_filed.value, self.center_offset_filed.setValue, int)
+        self.time_to_off: int = Field(self.time_to_off_field.value, self.time_to_off_field.setValue, int)
+
+        self.contr_ip: str = Field(self.contr_ip_field.text, self.contr_ip_field.setText, str)
+        self.contr_ip_2: str = Field(self.contr_ip_2_field.text, self.contr_ip_2_field.setText, str)
+
+        self.config = ConfigManager(self)
+        self.save.pressed.connect(self.config.save)
+        # endregion
+
+        self.select_video_path.pressed.connect(self.select_video_path_pressed)
+
+        if not self.cameras_list.selectedItems():
+            self.cameras_list.setCurrentRow(self.camera_id)
 
         self.cameras_list.itemClicked.connect(self.restart_cam)
 
@@ -91,21 +112,23 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     # region cam_worker
     def restart_cam(self):
-        self.cam_view.setChecked(False)
+        self.cam_view_field.setChecked(False)
+        self.config.save()
         time.sleep(1)
         self.cam_worker.terminate()
         self.cam_worker.start()
 
     def select_video_path_pressed(self):
-        self.vidio_path.setText(str(QFileDialog.getExistingDirectory(self, "Выберете путь")))
+        self.vidio_path_field.setText(str(QFileDialog.getExistingDirectory(self, "Выберете путь")))
+        self.config.save()
 
     def cam_startup(self, *args, **kwargs):
         self.base_frame = None
         self.previous_cnts = list()
         self.same_cnts = list()
         self.cap = cv2.VideoCapture(int(self.cameras_list.selectedItems()[0].text()))
-        if not os.path.exists(self.vidio_path.text()):
-            os.makedirs(self.vidio_path.text())
+        if not os.path.exists(self.video_path):
+            os.makedirs(self.video_path)
 
         _, frame = self.cap.read()
         # frame = imutils.resize(frame, width=640)
@@ -113,11 +136,11 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         s = (frame.shape[1], frame.shape[0])
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
         self.writer = cv2.VideoWriter(
-            os.path.join(self.vidio_path.text(), datetime.datetime.now().strftime("%H.%M.%S") + ".avi"), fourcc, 30, s)
+            os.path.join(self.video_path, datetime.datetime.now().strftime("%H.%M.%S") + ".avi"), fourcc, 30, s)
 
     def in_range(self, c1, c2):
         # return c1 == c2
-        return c1 in range(c2 - 5, c2 + 5)
+        return c1 in range(c2 - self.static_offset, c2 + self.static_offset)
 
     def cntr_in_range(self, c1, c2):
         (x, y, w, h) = c1
@@ -125,7 +148,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         return self.in_range(x, x2) and self.in_range(y, y2) and self.in_range(w, w2) and self.in_range(h, h2)
 
     def cam_terminate(self, *args, **kwargs):
-        if self.is_video_recording.isChecked():
+        if self.is_video_recording:
             self.writer.release()
 
         self.cap.release()
@@ -156,16 +179,14 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
 
-        line_y = int(len(frame) / 2 + self.center_offset.value())
+        line_y = int(len(frame) / 2 + self.center_offset)
         self.position_data = [0, 0]
 
         for c in cnts:
-            if self.min_area.text() != "0" and self.min_area.text() != "" and cv2.contourArea(c) < int(
-                    self.min_area.text()):
+            if self.min_area != 0 and cv2.contourArea(c) < self.min_area:
                 continue
-            if self.reset_area.text() != "0" and self.reset_area.text() != "" and cv2.contourArea(c) > int(
-                    self.reset_area.text()):
-                logging.warning('Base frame reset')
+            if self.reset_area != 0 and cv2.contourArea(c) > self.reset_area:
+                logging.warning('Base frame reset by reset area')
                 self.base_frame = gray
                 return
 
@@ -183,7 +204,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
             else:
                 self.position_data[1] += 1
 
-            if self.ar_cam.isChecked():
+            if self.ar_cam:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (205, 39, 95), 2)
                 cv2.circle(frame, center, 3, (205, 39, 95), 5)
 
@@ -195,7 +216,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     p[0] += 1
 
                     if p[0] in range(150, 299):
-                        if self.ar_cam.isChecked():
+                        if self.ar_cam:
                             center_y = int(y + h / 2)
                             center = (int(x + w / 2), center_y)
                             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
@@ -205,7 +226,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                         cropped = gray[y:y+h, x:x+w]
                         self.base_frame[y:y+h, x:x+w] = cropped
                         self.same_cnts.remove(p)
-                        if self.cam_view.isChecked():
+                        if self.cam_view:
                             cv2.imshow("Cropped", imutils.resize(cropped,  width=300))
 
                     detected = True
@@ -216,13 +237,13 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.previous_cnts = cnts
 
-        if self.ar_cam.isChecked():
+        if self.ar_cam:
             cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 255, 255), 2)
 
-        if self.is_video_recording.isChecked():
+        if self.is_video_recording:
             self.writer.write(frame)
 
-        if self.cam_view.isChecked():
+        if self.cam_view:
             cv2.imshow("Camera", imutils.resize(frame, width=1000))
             cv2.imshow("Thresh", thresh)
             cv2.imshow("Gray", gray)
@@ -249,7 +270,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         for i, (t, l) in enumerate(self.previous_light):
             if light[i] != l:
-                if (not light[i] and self.previous_light[i][1] and time.time() - self.previous_light[i][0] > 10) or light[i] and not self.previous_light[i][1]:
+                if (not light[i] and self.previous_light[i][1] and time.time() - self.previous_light[i][0] > self.time_to_off) or light[i] and not self.previous_light[i][1]:
                     new_previous_light[i][0] = time.time()
                     new_previous_light[i][1] = light[i]
                 else:
@@ -257,11 +278,11 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         data_callback.emit(light)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        ip, port = self.contr_ip.text().split(":")
+        ip, port = self.contr_ip.split(":")
         sock.sendto(bytes(light), (ip, int(port)))
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        ip, port = self.contr_ip_2.text().split(":")
+        ip, port = self.contr_ip_2.split(":")
         sock.sendto(bytes(light), (ip, int(port)))
         # print(sock.recv(256))
 
