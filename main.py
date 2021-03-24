@@ -174,6 +174,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         frame_delta = cv2.absdiff(self.base_frame, gray)
         thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
         thresh = cv2.dilate(thresh, None, iterations=2)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (51, 51)))
 
         cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
@@ -215,13 +216,13 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 if self.cntr_in_range(cv2.boundingRect(c), p[1]):
                     p[0] += 1
 
-                    if p[0] in range(150, 299):
+                    if p[0] in range(int(self.frame_to_delete/2), self.frame_to_delete-1):
                         if self.ar_cam:
                             center_y = int(y + h / 2)
                             center = (int(x + w / 2), center_y)
                             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
                             cv2.circle(frame, center, 3, (255, 255, 255), 5)
-                    if p[0] == 300:
+                    if p[0] == self.frame_to_delete:
                         logging.warning(f'Cutting zone with unmoved object: {x}:{y} ({w} x {h}). Count: {p[0]}')
                         cropped = gray[y:y+h, x:x+w]
                         self.base_frame[y:y+h, x:x+w] = cropped

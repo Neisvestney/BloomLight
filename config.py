@@ -9,7 +9,8 @@ class ConfigManager:
     def __init__(self, external: type):
         self.external = external
         self.fields = [(f, external.__getattribute__(f)) for f in dir(external) if type(external.__getattribute__(f)) == Field]
-        self.load()
+        if not self.load():
+            self.set()
 
     def set(self):
         for f in self.fields:
