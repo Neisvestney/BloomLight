@@ -54,23 +54,23 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         # self.cameras_list.addItem("0")
 
         # region Config
-        self.is_video_recording: bool = Field(self.is_video_recording_field.isChecked, self.is_video_recording_field.setChecked, bool)
-        self.video_path: str = Field(self.vidio_path_field.text, self.vidio_path_field.setText, str)
+        self.is_video_recording: bool = Field(self.is_video_recording_field.isChecked, self.is_video_recording_field.setChecked, self.is_video_recording_field.stateChanged, bool)
+        self.video_path: str = Field(self.vidio_path_field.text, self.vidio_path_field.setText, self.vidio_path_field.textChanged, str)
 
-        self.ar_cam: bool = Field(self.ar_cam_field.isChecked, self.ar_cam_field.setChecked, bool)
-        self.cam_view: bool = Field(self.cam_view_field.isChecked, self.cam_view_field.setChecked, bool)
-        self.camera_id: int = Field(lambda: int(self.cameras_list.selectedItems()[0].text()) if self.cameras_list.selectedItems() else 0, self.cameras_list.setCurrentRow, int)
+        self.ar_cam: bool = Field(self.ar_cam_field.isChecked, self.ar_cam_field.setChecked, self.ar_cam_field.stateChanged, bool)
+        self.cam_view: bool = Field(self.cam_view_field.isChecked, self.cam_view_field.setChecked, self.cam_view_field.stateChanged, bool)
+        self.camera_id: int = Field(lambda: int(self.cameras_list.selectedItems()[0].text()) if self.cameras_list.selectedItems() else 0, self.cameras_list.setCurrentRow, data_type=int)
 
-        self.min_area: int = Field(self.min_area_field.value, self.min_area_field.setValue, int)
-        self.reset_area: int = Field(self.reset_area_field.value, self.reset_area_field.setValue, int)
-        self.frame_to_delete: int = Field(self.frame_to_delete_field.value, self.frame_to_delete_field.setValue, int)
-        self.static_offset: int = Field(self.static_offset_field.value, self.static_offset_field.setValue, int)
+        self.min_area: int = Field(self.min_area_field.value, self.min_area_field.setValue, self.min_area_field.valueChanged, int)
+        self.reset_area: int = Field(self.reset_area_field.value, self.reset_area_field.setValue, self.reset_area_field.valueChanged, int)
+        self.frame_to_delete: int = Field(self.frame_to_delete_field.value, self.frame_to_delete_field.setValue, self.frame_to_delete_field.valueChanged, int)
+        self.static_offset: int = Field(self.static_offset_field.value, self.static_offset_field.setValue, self.static_offset_field.valueChanged, int)
 
-        self.center_offset: int = Field(self.center_offset_filed.value, self.center_offset_filed.setValue, int)
-        self.time_to_off: int = Field(self.time_to_off_field.value, self.time_to_off_field.setValue, int)
+        self.center_offset: int = Field(self.center_offset_filed.value, self.center_offset_filed.setValue, self.center_offset_filed.valueChanged, int)
+        self.time_to_off: int = Field(self.time_to_off_field.value, self.time_to_off_field.setValue, self.time_to_off_field.valueChanged, int)
 
-        self.contr_ip: str = Field(self.contr_ip_field.text, self.contr_ip_field.setText, str)
-        self.contr_ip_2: str = Field(self.contr_ip_2_field.text, self.contr_ip_2_field.setText, str)
+        self.contr_ip: str = Field(self.contr_ip_field.text, self.contr_ip_field.setText, self.contr_ip_field.textChanged, str)
+        self.contr_ip_2: str = Field(self.contr_ip_2_field.text, self.contr_ip_2_field.setText, self.contr_ip_2_field.textChanged, str)
 
         self.config = ConfigManager(self)
         self.save.pressed.connect(self.config.save)
@@ -297,6 +297,11 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     def closeEvent(self, event):
         self.cam_worker.terminate()
+
+        if self.config.save_thread:
+            self.config.save_thread.stopped = True
+        self.config.save()
+
         logging.info("Good bye!")
 
 

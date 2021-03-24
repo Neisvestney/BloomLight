@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import logging
 import pickle
-from typing import TypeVar, Type, Generic
+import time
+from threading import Thread
+from typing import TypeVar, Type, Generic, List
 
 
 class ConfigManager:
     def __init__(self, external: type):
+        self.save_thread: StoppingTimer = None
         self.external = external
-        self.fields = [(f, external.__getattribute__(f)) for f in dir(external) if type(external.__getattribute__(f)) == Field]
+        self.fields: List[tuple[str, Field]] = [(f, external.__getattribute__(f)) for f in dir(external) if type(external.__getattribute__(f)) == Field]
+        [f[1].update_handler.connect(lambda: self.save_in_time()) for f in self.fields if f[1].update_handler]
         if not self.load():
             self.set()
 
@@ -27,6 +31,14 @@ class ConfigManager:
         pickle.dump(self.get_save(), file)
         file.close()
         logging.info("Save complete")
+
+    def save_in_time(self, delay=2):
+        self.set()
+
+        if self.save_thread:
+            self.save_thread.stopped = True
+        self.save_thread = StoppingTimer(delay, self.save)
+        self.save_thread.start()
 
     def load(self):
         try:
@@ -54,7 +66,21 @@ T = TypeVar('T')
 
 
 class Field(Generic[T]):
-    def __init__(self, value_fn, set_fn, data_type: Type[T]) -> T:
+    def __init__(self, value_fn, set_fn, update_handler=None, data_type: Type[T] = object) -> T:
         self.value_fn = value_fn
         self.set_fn = set_fn
+        self.update_handler = update_handler
         self.data_type = data_type
+
+
+class StoppingTimer(Thread):
+    def __init__(self, time_to_run, fn):
+        Thread.__init__(self)
+        self.time_to_run = time_to_run
+        self.fn = fn
+        self.stopped = False
+
+    def run(self):
+        time.sleep(self.time_to_run)
+        if not self.stopped:
+            self.fn()
