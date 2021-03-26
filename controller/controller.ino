@@ -9,8 +9,8 @@ unsigned int localUdpPort = 4210;  // local port to listen on
 byte incomingPacket[255];  // buffer for incoming packets
 char  replyPacket[] = "Hi there! Got the message :-)";  // a reply string to send back
 
-#define RELAY_1 5
-#define RELAY_2 4
+#define RELAY_1 D4
+#define RELAY_2 D5
 
 void setup()
 {

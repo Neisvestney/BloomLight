@@ -66,6 +66,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.frame_to_delete: int = Field(self.frame_to_delete_field.value, self.frame_to_delete_field.setValue, self.frame_to_delete_field.valueChanged, int)
         self.static_offset: int = Field(self.static_offset_field.value, self.static_offset_field.setValue, self.static_offset_field.valueChanged, int)
 
+        self.is_vertical = True
         self.center_offset: int = Field(self.center_offset_filed.value, self.center_offset_filed.setValue, self.center_offset_filed.valueChanged, int)
         self.time_to_off: int = Field(self.time_to_off_field.value, self.time_to_off_field.setValue, self.time_to_off_field.valueChanged, int)
 
@@ -91,6 +92,7 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.previous_cnts = list()
         self.same_cnts = list()
+        self.time_without_cnts = None
         self.cam_worker = Worker(self.cam_process, self.cam_startup, self.cam_terminate)
         self.cam_worker.data.connect(self.cam_worker_on_data)
         # self.pushButton.pressed.connect(lambda: self.view_cam_worker.terminate())
@@ -124,6 +126,8 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     def cam_startup(self, *args, **kwargs):
         self.base_frame = None
+        if os.path.exists('baseframe.png'):
+            self.base_frame = cv2.imread('baseframe.png', 0)
         self.previous_cnts = list()
         self.same_cnts = list()
         self.cap = cv2.VideoCapture(int(self.cameras_list.selectedItems()[0].text()))
@@ -169,21 +173,26 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         if self.base_frame is None:
             logging.warning('Base frame reset')
             self.base_frame = gray
+            cv2.imwrite('saved_baseframe.png', gray)
             return
 
         frame_delta = cv2.absdiff(self.base_frame, gray)
         thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
         thresh = cv2.dilate(thresh, None, iterations=2)
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (51, 51)))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
 
         cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
 
         line_y = int(len(frame) / 2 + self.center_offset)
+        line_x = int(len(frame[0]) / 2 + self.center_offset)
         self.position_data = [0, 0]
 
-        for c in cnts:
+        cnts_len = 0
+        for c in cnts[:]:
+            if self.min_area != 0 and cv2.contourArea(c) > self.min_area/2:
+                cnts_len += 1
             if self.min_area != 0 and cv2.contourArea(c) < self.min_area:
                 continue
             if self.reset_area != 0 and cv2.contourArea(c) > self.reset_area:
@@ -193,17 +202,29 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
             (x, y, w, h) = cv2.boundingRect(c)
             center_y = int(y + h / 2)
-            center = (int(x + w / 2), center_y)
+            center_x = int(x + w / 2)
+            center = (center_x, center_y)
 
             for p in self.previous_cnts:
                 (x2, y2, w2, h2) = cv2.boundingRect(p)
                 if self.cntr_in_range((x, y, w, h), (x2, y2, w2, h2)):
                     self.same_cnts.append([0, (x2, y2, w2, h2)])
-
-            if center_y < line_y:
-                self.position_data[0] += 1
+            if self.is_vertical:
+                if center_x < line_x:
+                    self.position_data[0] += 1
+                elif center_x == line_x:
+                    self.position_data[0] += 1
+                    self.position_data[1] += 1
+                else:
+                    self.position_data[1] += 1
             else:
-                self.position_data[1] += 1
+                if center_y < line_y:
+                    self.position_data[0] += 1
+                elif center_y == line_y:
+                    self.position_data[0] += 1
+                    self.position_data[1] += 1
+                else:
+                    self.position_data[1] += 1
 
             if self.ar_cam:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (205, 39, 95), 2)
@@ -219,7 +240,8 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     if p[0] in range(int(self.frame_to_delete/2), self.frame_to_delete-1):
                         if self.ar_cam:
                             center_y = int(y + h / 2)
-                            center = (int(x + w / 2), center_y)
+                            center_x = int(x + w / 2)
+                            center = (center_x, center_y)
                             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
                             cv2.circle(frame, center, 3, (255, 255, 255), 5)
                     if p[0] == self.frame_to_delete:
@@ -239,7 +261,10 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.previous_cnts = cnts
 
         if self.ar_cam:
-            cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 255, 255), 2)
+            if self.is_vertical:
+                cv2.line(frame, (line_x, 0), (line_x, frame.shape[0]), (255, 255, 255), 2)
+            else:
+                cv2.line(frame, (0, line_y), (frame.shape[1], line_y), (255, 255, 255), 2)
 
         if self.is_video_recording:
             self.writer.write(frame)
@@ -249,13 +274,22 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
             cv2.imshow("Thresh", thresh)
             cv2.imshow("Gray", gray)
             cv2.imshow("Frame Delta", frame_delta)
+            if self.base_frame is not None:
+                cv2.imshow("Base frame", self.base_frame)
             cv2.waitKey(1) & 0xFF
         else:
             cv2.destroyAllWindows()
 
+        if cnts_len == 0:
+            if time.time() - self.time_without_cnts > 15:
+                self.time_without_cnts = time.time()
+                self.base_frame = None
+        else:
+            self.time_without_cnts = time.time()
+
         data_callback.emit([np.mean(np.mean(gray, axis=0), axis=0),
                             QPixmap.fromImage(QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_BGR888)),
-                            len(cnts)])
+                            cnts_len])
 
     # endregion
 
@@ -276,6 +310,9 @@ class App(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     new_previous_light[i][1] = light[i]
                 else:
                     light[i] = True
+            else:
+                new_previous_light[i][0] = time.time()
+                new_previous_light[i][1] = light[i]
 
         data_callback.emit(light)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
